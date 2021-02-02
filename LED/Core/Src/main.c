@@ -56,7 +56,49 @@ static void MX_GPIO_Init(void);
 /* USER CODE BEGIN 0 */
 
 /* USER CODE END 0 */
+/*120Mhz时钟时，当ulCount为1时，函数耗时3个时钟，延时=3*1/120us=1/40us*/
+/*
+SystemCoreClock=120000000
 
+us级延时,延时n微秒
+SysCtlDelay(n*(SystemCoreClock/3000000));
+
+ms级延时,延时n毫秒
+SysCtlDelay(n*(SystemCoreClock/3000));
+
+m级延时,延时n秒
+SysCtlDelay(n*(SystemCoreClock/3));
+*/
+
+#if defined   (__CC_ARM) /*!< ARM Compiler */
+__asm void
+SysCtlDelay(unsigned long ulCount)
+{
+    subs    r0, #1;
+    bne     SysCtlDelay;
+    bx      lr;
+}
+#elif defined ( __ICCARM__ ) /*!< IAR Compiler */
+void
+SysCtlDelay(unsigned long ulCount)
+{
+    __asm("    subs    r0, #1\n"
+       "    bne.n   SysCtlDelay\n"
+       "    bx      lr");
+}
+
+#elif defined (__GNUC__) /*!< GNU Compiler */
+void __attribute__((naked))
+SysCtlDelay(unsigned long ulCount)
+{
+    __asm("    subs    r0, #1\n"
+       "    bne     SysCtlDelay\n"
+       "    bx      lr");
+}
+
+#elif defined  (__TASKING__) /*!< TASKING Compiler */                           
+/*无*/
+#endif /* __CC_ARM */
 /**
   * @brief  The application entry point.
   * @retval int
@@ -93,9 +135,10 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    /* USER CODE END WHILE */
-
-    /* USER CODE BEGIN 3 */
+    HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_SET);
+		SysCtlDelay(500*(SystemCoreClock/3000));     //延时500ms
+		HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_RESET);
+		SysCtlDelay(500*(SystemCoreClock/3000));     //延时500ms
   }
   /* USER CODE END 3 */
 }
